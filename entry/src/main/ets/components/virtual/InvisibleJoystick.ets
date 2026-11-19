@@ -44,6 +44,8 @@ export struct InvisibleJoystick {
   @Prop areaHeight: number = 200;
   /** 摇杆可视半径 (vp)，触摸后出现的圆的半径 */
   @Prop stickRadius: number = 60;
+  /** 死区比例 */
+  @Prop deadzone: number = 0.15;
   /** 外圆颜色 */
   @Prop ringColor: string = '#6050C080';
   /** 内摇杆颜色 */
@@ -77,9 +79,6 @@ export struct InvisibleJoystick {
   // 预计算的尺寸值
   private innerRadius: number = 15;
   private maxTravel: number = 45;
-
-  // 死区比例
-  private deadzone: number = 0.15;
 
   // 死区超时（150ms 后自动解除死区，允许精细操作）
   private static readonly DEADZONE_TIMEOUT_MS: number = 150;
@@ -171,8 +170,8 @@ export struct InvisibleJoystick {
           })
       }
     }
-    .width(this.areaWidth)
-    .height(this.areaHeight)
+    .width('100%')
+    .height('100%')
     .clip(true)
     .opacity(this.opacity_ / 100)
     .hitTestBehavior(HitTestMode.Block)

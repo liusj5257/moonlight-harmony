@@ -14,7 +14,7 @@
  */
 import { InputEvent, InputType, ControllerButton, ControllerButtonEvent, ControllerAxis, ControllerAxisEvent } from '../../model/InputEvent';
 import { SuppressWarnings, SuppressWarningsType } from '@ohos.annotation';
-import { AnalogStick, AnalogStickConfig } from './AnalogStick';
+import { InvisibleJoystick } from './InvisibleJoystick';
 import { DeviceVibrationCoordinator } from '../../service/input/DeviceVibrationCoordinator';
 import { PreferencesUtil } from '../../utils/PreferencesUtil';
 import { display } from '@kit.ArkUI';
@@ -87,213 +87,263 @@ export struct VirtualController {
   }
 
   build() {
-    // 使用 Column + Row 标准 flex 布局
-    // 确保所有子组件正确参与 ArkUI 触摸测试树
-    Column() {
-      // ===== 上方 - 肩键和扳机 =====
-      if (this.config.showShoulder !== false) {
-        Row() {
-          // 左侧肩键组
-          Column({ space: 6 }) {
-            // LT
-            Column() {
-              Text('LT')
-                .fontSize(12 * this.controllerScale)
-                .fontColor(this.withAlpha('#FFFFFF', 0.5))
-                .fontWeight(FontWeight.Bold)
-            }
-            .width(60 * this.controllerScale)
-            .height(44 * this.controllerScale)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(12)
-            .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
-            .hitTestBehavior(HitTestMode.Block)
-            .onTouch((event: TouchEvent) => this.handleTriggerTouch(true, event))
-
-            // LB
-            Column() {
-              Text('LB')
-                .fontSize(12 * this.controllerScale)
-                .fontColor(this.withAlpha('#FFFFFF', 0.5))
-                .fontWeight(FontWeight.Medium)
-            }
-            .width(64 * this.controllerScale)
-            .height(34 * this.controllerScale)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(17 * this.controllerScale)
-            .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
-            .hitTestBehavior(HitTestMode.Block)
-            .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.LB, event))
-          }
-          .alignItems(HorizontalAlign.Start)
-
-          Blank()
-
-          // 右侧肩键组
-          Column({ space: 6 }) {
-            // RT
-            Column() {
-              Text('RT')
-                .fontSize(12 * this.controllerScale)
-                .fontColor(this.withAlpha('#FFFFFF', 0.5))
-                .fontWeight(FontWeight.Bold)
-            }
-            .width(60 * this.controllerScale)
-            .height(44 * this.controllerScale)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(12)
-            .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
-            .hitTestBehavior(HitTestMode.Block)
-            .onTouch((event: TouchEvent) => this.handleTriggerTouch(false, event))
-
-            // RB
-            Column() {
-              Text('RB')
-                .fontSize(12 * this.controllerScale)
-                .fontColor(this.withAlpha('#FFFFFF', 0.5))
-                .fontWeight(FontWeight.Medium)
-            }
-            .width(64 * this.controllerScale)
-            .height(34 * this.controllerScale)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(17 * this.controllerScale)
-            .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
-            .hitTestBehavior(HitTestMode.Block)
-            .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.RB, event))
-          }
-          .alignItems(HorizontalAlign.End)
-        }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 16 })
-      }
-
-      // ===== 中间区域 - 左摇杆+D-Pad / ABXY+右摇杆 =====
+    Stack() {
+      // 两个半屏触摸区位于按钮下方；按下后以触点为摇杆中心显示摇杆。
       Row() {
-        // 左侧：左摇杆 + D-Pad
-        Column() {
-          // 左摇杆
-          if (this.config.showLeftStick !== false) {
-            Column() {
-              AnalogStick({
-                config: {
-                  isLeftStick: true,
-                  outerRadius: 55 * this.controllerScale,
-                  innerRadius: 24 * this.controllerScale,
-                  deadzone: this.controllerDeadzone,
-                  opacity: this.controllerOpacity,
-                  enableClick: true
-                } as AnalogStickConfig,
-                onInput: (event: InputEvent) => this.onInput(event)
-              })
-            }
-            .margin({ bottom: 16 })
-          }
-
-          // D-Pad（可爱十字键造型）
-          if (this.config.showDpad !== false) {
-            this.buildCrossDpad()
-          }
-        }
-        .alignItems(HorizontalAlign.Center)
-        .justifyContent(FlexAlign.Center)
-        .padding({ left: 24 })
-
-        Blank()
-
-        // 右侧：ABXY + 右摇杆
-        Column() {
-          // ABXY 按钮
-          if (this.config.showButtons !== false) {
-            Column() {
-              // Y
-              this.buildActionButton('Y', ControllerButton.Y, '#FFB900')
-
-              Row({ space: 8 }) {
-                // X
-                this.buildActionButton('X', ControllerButton.X, '#4BA3E3')
-                // B
-                this.buildActionButton('B', ControllerButton.B, '#E87070')
-              }
-              .margin({ top: 8 })
-
-              // A
-              Column() {
-                this.buildActionButton('A', ControllerButton.A, '#50C878')
-              }
-              .margin({ top: 8 })
-            }
-            .margin({ bottom: 16 })
-          }
-
-          // 右摇杆
-          if (this.config.showRightStick !== false) {
-            AnalogStick({
-              config: {
-                isLeftStick: false,
-                outerRadius: 55 * this.controllerScale,
-                innerRadius: 24 * this.controllerScale,
-                deadzone: this.controllerDeadzone,
-                opacity: this.controllerOpacity,
-                enableClick: true
-              } as AnalogStickConfig,
-              onInput: (event: InputEvent) => this.onInput(event)
+        if (this.config.showLeftStick !== false) {
+          Column() {
+            InvisibleJoystick({
+              stickRadius: 55 * this.controllerScale,
+              deadzone: this.controllerDeadzone,
+              opacity_: this.controllerOpacity * 100,
+              onMovement: (x: number, y: number): void => this.sendStickMovement(true, x, y),
+              onDoubleClick: (): void => this.sendStickClick(true)
             })
+              .width('100%')
+              .height('100%')
           }
+          .width('50%')
+          .height('100%')
+        } else {
+          Blank().width('50%').height('100%')
         }
-        .alignItems(HorizontalAlign.Center)
-        .justifyContent(FlexAlign.Center)
-        .padding({ right: 24 })
+
+        if (this.config.showRightStick !== false) {
+          Column() {
+            InvisibleJoystick({
+              stickRadius: 55 * this.controllerScale,
+              deadzone: this.controllerDeadzone,
+              opacity_: this.controllerOpacity * 100,
+              onMovement: (x: number, y: number): void => this.sendStickMovement(false, x, y),
+              onDoubleClick: (): void => this.sendStickClick(false)
+            })
+              .width('100%')
+              .height('100%')
+          }
+          .width('50%')
+          .height('100%')
+        } else {
+          Blank().width('50%').height('100%')
+        }
       }
       .width('100%')
+      .height('100%')
 
-      // ===== 底部 - Start/Back/Guide =====
-      if (this.config.showCenter !== false) {
-        Row({ space: 12 }) {
-          // Back
-          this.buildCenterButton('◂', 'BACK', ControllerButton.BACK)
+      // 使用 Column + Row 标准 flex 布局，确保按钮位于触摸区上方。
+      Column() {
+        // ===== 上方 - 肩键和扳机 =====
+        if (this.config.showShoulder !== false) {
+          Row() {
+            // 左侧肩键组
+            Column({ space: 6 }) {
+              // LT
+              Column() {
+                Text('LT')
+                  .fontSize(12 * this.controllerScale)
+                  .fontColor(this.withAlpha('#FFFFFF', 0.5))
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width(60 * this.controllerScale)
+              .height(44 * this.controllerScale)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.Transparent)
+              .borderRadius(12)
+              .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
+              .hitTestBehavior(HitTestMode.Block)
+              .onTouch((event: TouchEvent) => this.handleTriggerTouch(true, event))
 
-          // Guide（可通过设置隐藏）
-          if (this.config.showGuideButton !== false) {
-            Column() {
-              Text('◉')
-                .fontSize(18 * this.controllerScale)
-                .fontColor(this.withAlpha('#7EB8E0', 0.6))
+              // LB
+              Column() {
+                Text('LB')
+                  .fontSize(12 * this.controllerScale)
+                  .fontColor(this.withAlpha('#FFFFFF', 0.5))
+                  .fontWeight(FontWeight.Medium)
+              }
+              .width(64 * this.controllerScale)
+              .height(34 * this.controllerScale)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.Transparent)
+              .borderRadius(17 * this.controllerScale)
+              .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
+              .hitTestBehavior(HitTestMode.Block)
+              .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.LB, event))
             }
-            .width(42 * this.controllerScale)
-            .height(42 * this.controllerScale)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(Color.Transparent)
-            .borderRadius(21 * this.controllerScale)
-            .border({ width: 1.5, color: this.withAlpha('#7EB8E0', 0.25) })
-            .hitTestBehavior(HitTestMode.Block)
-            .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.SPECIAL, event))
+            .alignItems(HorizontalAlign.Start)
+
+            Blank()
+
+            // 右侧肩键组
+            Column({ space: 6 }) {
+              // RT
+              Column() {
+                Text('RT')
+                  .fontSize(12 * this.controllerScale)
+                  .fontColor(this.withAlpha('#FFFFFF', 0.5))
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width(60 * this.controllerScale)
+              .height(44 * this.controllerScale)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.Transparent)
+              .borderRadius(12)
+              .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
+              .hitTestBehavior(HitTestMode.Block)
+              .onTouch((event: TouchEvent) => this.handleTriggerTouch(false, event))
+
+              // RB
+              Column() {
+                Text('RB')
+                  .fontSize(12 * this.controllerScale)
+                  .fontColor(this.withAlpha('#FFFFFF', 0.5))
+                  .fontWeight(FontWeight.Medium)
+              }
+              .width(64 * this.controllerScale)
+              .height(34 * this.controllerScale)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.Transparent)
+              .borderRadius(17 * this.controllerScale)
+              .border({ width: 1, color: this.withAlpha('#FFFFFF', 0.15) })
+              .hitTestBehavior(HitTestMode.Block)
+              .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.RB, event))
+            }
+            .alignItems(HorizontalAlign.End)
           }
-
-          // Start
-          this.buildCenterButton('▸', 'START', ControllerButton.START)
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 16 })
         }
-        .justifyContent(FlexAlign.Center)
-        .margin({ bottom: 20 })
-      }
 
-      // ===== 独立 L3/R3 按钮（可选）=====
-      if (this.config.showL3R3 === true) {
+        // ===== 中间区域 - D-Pad / ABXY =====
         Row() {
-          this.buildSmallButton('L3', ControllerButton.LS)
+          // 左侧：D-Pad
+          Column() {
+            if (this.config.showDpad !== false) {
+              this.buildCrossDpad()
+            }
+          }
+          .alignItems(HorizontalAlign.Center)
+          .justifyContent(FlexAlign.Center)
+          .padding({ left: 24 })
+
           Blank()
-          this.buildSmallButton('R3', ControllerButton.RS)
+
+          // 右侧：ABXY
+          Column() {
+            if (this.config.showButtons !== false) {
+              Column() {
+                // Y
+                this.buildActionButton('Y', ControllerButton.Y, '#FFB900')
+
+                Row({ space: 8 }) {
+                  // X
+                  this.buildActionButton('X', ControllerButton.X, '#4BA3E3')
+                  // B
+                  this.buildActionButton('B', ControllerButton.B, '#E87070')
+                }
+                .margin({ top: 8 })
+
+                // A
+                Column() {
+                  this.buildActionButton('A', ControllerButton.A, '#50C878')
+                }
+                .margin({ top: 8 })
+              }
+              .margin({ bottom: 16 })
+            }
+          }
+          .alignItems(HorizontalAlign.Center)
+          .justifyContent(FlexAlign.Center)
+          .padding({ right: 24 })
         }
         .width('100%')
-        .padding({ left: 100, right: 100 })
-        .margin({ bottom: 16 })
+
+        // ===== 底部 - Start/Back/Guide =====
+        if (this.config.showCenter !== false) {
+          Row({ space: 12 }) {
+            // Back
+            this.buildCenterButton('◂', 'BACK', ControllerButton.BACK)
+
+            // Guide（可通过设置隐藏）
+            if (this.config.showGuideButton !== false) {
+              Column() {
+                Text('◉')
+                  .fontSize(18 * this.controllerScale)
+                  .fontColor(this.withAlpha('#7EB8E0', 0.6))
+              }
+              .width(42 * this.controllerScale)
+              .height(42 * this.controllerScale)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.Transparent)
+              .borderRadius(21 * this.controllerScale)
+              .border({ width: 1.5, color: this.withAlpha('#7EB8E0', 0.25) })
+              .hitTestBehavior(HitTestMode.Block)
+              .onTouch((event: TouchEvent) => this.handleButtonTouch(ControllerButton.SPECIAL, event))
+            }
+
+            // Start
+            this.buildCenterButton('▸', 'START', ControllerButton.START)
+          }
+          .justifyContent(FlexAlign.Center)
+          .margin({ bottom: 20 })
+        }
+
+        // ===== 独立 L3/R3 按钮（可选）=====
+        if (this.config.showL3R3 === true) {
+          Row() {
+            this.buildSmallButton('L3', ControllerButton.LS)
+            Blank()
+            this.buildSmallButton('R3', ControllerButton.RS)
+          }
+          .width('100%')
+          .padding({ left: 100, right: 100 })
+          .margin({ bottom: 16 })
+        }
       }
+      .width('100%')
+      .height('100%')
+      .justifyContent(FlexAlign.End)
+      .hitTestBehavior(HitTestMode.Transparent)
     }
     .width('100%')
-    .justifyContent(FlexAlign.End)
+    .height('100%')
+  }
+
+  private sendStickMovement(isLeft: boolean, x: number, y: number): void {
+    const xAxis: ControllerAxis = isLeft ? ControllerAxis.LEFT_X : ControllerAxis.RIGHT_X;
+    const yAxis: ControllerAxis = isLeft ? ControllerAxis.LEFT_Y : ControllerAxis.RIGHT_Y;
+    this.onInput({
+      type: InputType.CONTROLLER_AXIS,
+      timestamp: Date.now(),
+      controllerIndex: 0,
+      axis: xAxis,
+      value: Math.round(x * 32767)
+    } as ControllerAxisEvent);
+    this.onInput({
+      type: InputType.CONTROLLER_AXIS,
+      timestamp: Date.now(),
+      controllerIndex: 0,
+      axis: yAxis,
+      value: Math.round(-y * 32767)
+    } as ControllerAxisEvent);
+  }
+
+  private sendStickClick(isLeft: boolean): void {
+    const button: ControllerButton = isLeft ? ControllerButton.LS : ControllerButton.RS;
+    this.onInput({
+      type: InputType.CONTROLLER_BUTTON,
+      timestamp: Date.now(),
+      controllerIndex: 0,
+      button: button,
+      isPressed: true
+    } as ControllerButtonEvent);
+    setTimeout(() => {
+      this.onInput({
+        type: InputType.CONTROLLER_BUTTON,
+        timestamp: Date.now(),
+        controllerIndex: 0,
+        button: button,
+        isPressed: false
+      } as ControllerButtonEvent);
+    }, 50);
   }
 
   // ==================== ABXY 按钮（全透明 + 彩色边框）====================
