@@ -99,8 +99,6 @@ export struct VirtualController {
               onMovement: (x: number, y: number): void => this.sendStickMovement(true, x, y),
               onDoubleClick: (): void => this.sendStickClick(true)
             })
-              .width('100%')
-              .height('100%')
           }
           .width('50%')
           .height('100%')
@@ -117,8 +115,6 @@ export struct VirtualController {
               onMovement: (x: number, y: number): void => this.sendStickMovement(false, x, y),
               onDoubleClick: (): void => this.sendStickClick(false)
             })
-              .width('100%')
-              .height('100%')
           }
           .width('50%')
           .height('100%')
